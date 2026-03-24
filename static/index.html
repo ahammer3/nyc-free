@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Free Events Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+        #map { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+
+        /* Top bar */
+        #top-bar {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        #top-bar h1 {
+            font-size: 16px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        #date-input {
+            padding: 6px 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        #date-input:focus { outline: none; border-color: #6366f1; }
+        #event-count {
+            font-size: 13px;
+            color: #6b7280;
+            white-space: nowrap;
+        }
+        .nav-btn {
+            background: none;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #374151;
+        }
+        .nav-btn:hover { background: #f3f4f6; }
+
+        /* Sidebar */
+        #sidebar {
+            position: absolute;
+            top: 70px;
+            left: 12px;
+            bottom: 24px;
+            width: 340px;
+            z-index: 1000;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        #sidebar.collapsed {
+            transform: translateX(-352px);
+        }
+        #sidebar-toggle {
+            position: absolute;
+            top: 80px;
+            left: 12px;
+            z-index: 1001;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 18px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #sidebar-toggle.visible { display: flex; }
+
+        #sidebar-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            font-weight: 600;
+            font-size: 14px;
+            color: #374151;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #sidebar-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            color: #9ca3af;
+            display: none;
+        }
+
+        /* Distance filter */
+        #distance-filter {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f3f4f6;
+            display: none; /* shown once we have location */
+        }
+        #distance-filter.visible { display: block; }
+        #distance-filter-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        #distance-filter-header label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #distance-toggle {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #6366f1;
+        }
+        #distance-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6366f1;
+            min-width: 48px;
+            text-align: right;
+        }
+        #distance-slider {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #6366f1;
+            margin-top: 2px;
+        }
+        #distance-slider:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        #location-status {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+        .location-btn {
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .location-btn:hover { background: #4f46e5; }
+
+        /* Category filter bar */
+        #category-filters {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f3f4f6;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .cat-filter-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            border: 2px solid transparent;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .cat-filter-btn .cat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .cat-filter-btn.active {
+            opacity: 1;
+        }
+        .cat-filter-btn.inactive {
+            opacity: 0.35;
+            filter: grayscale(0.5);
+        }
+        .cat-filter-btn .cat-count {
+            font-weight: 400;
+            opacity: 0.7;
+        }
+
+        #event-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+        .event-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #f9fafb;
+            transition: background 0.15s;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+        .event-item:hover { background: #f3f4f6; }
+        .event-item.active { background: #eef2ff; }
+        .event-item-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 3px;
+        }
+        .event-item-content { flex: 1; min-width: 0; }
+        .event-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 2px;
+        }
+        .event-meta {
+            font-size: 11px;
+            color: #6b7280;
+        }
+        .event-tag {
+            display: inline-block;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-right: 4px;
+            margin-top: 3px;
+            font-weight: 500;
+        }
+        .no-location-badge {
+            display: inline-block;
+            font-size: 10px;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-top: 3px;
+        }
+
+        .section-header {
+            padding: 8px 16px 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #9ca3af;
+        }
+
+        /* Legend */
+        #legend {
+            position: absolute;
+            bottom: 24px;
+            right: 12px;
+            z-index: 999;
+            background: white;
+            padding: 10px 14px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            font-size: 12px;
+        }
+        .legend-row { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+
+        /* Popup styling */
+        .event-popup { max-width: 280px; }
+        .event-popup img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .event-popup h3 {
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: #1f2937;
+        }
+        .event-popup .popup-categories {
+            margin-bottom: 6px;
+        }
+        .event-popup .popup-cat-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-right: 4px;
+            margin-bottom: 2px;
+        }
+        .event-popup .popup-time {
+            font-size: 12px;
+            color: #6366f1;
+            margin-bottom: 4px;
+        }
+        .event-popup .popup-address {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 6px;
+        }
+        .event-popup .popup-desc {
+            font-size: 12px;
+            color: #4b5563;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+        .event-popup .popup-link {
+            display: inline-block;
+            font-size: 12px;
+            color: #6366f1;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .event-popup .popup-link:hover { text-decoration: underline; }
+        .event-popup .popup-unknown {
+            font-size: 11px;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: inline-block;
+        }
+
+        /* Leaflet popup overrides */
+        .leaflet-popup-content-wrapper {
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+        .leaflet-popup-content { margin: 12px 14px; }
+
+        /* Loading */
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1002;
+            background: white;
+            padding: 16px 28px;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            font-size: 14px;
+            color: #6b7280;
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 700px) {
+            #sidebar { width: 280px; }
+            #top-bar { left: 12px; right: 12px; transform: none; }
+            #top-bar h1 { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <div id="top-bar">
+        <h1>NYC Free Events</h1>
+        <button class="nav-btn" id="prev-day" title="Previous day">&larr;</button>
+        <input type="date" id="date-input" />
+        <button class="nav-btn" id="next-day" title="Next day">&rarr;</button>
+        <span id="event-count"></span>
+        <button class="location-btn" id="locate-me-btn" title="Use my location">My Location</button>
+    </div>
+
+    <div id="sidebar">
+        <div id="sidebar-header">
+            <span>Events</span>
+            <button id="sidebar-close" title="Close sidebar">&times;</button>
+        </div>
+        <div id="distance-filter">
+            <div id="distance-filter-header">
+                <label>
+                    <input type="checkbox" id="distance-toggle" checked />
+                    Nearby only
+                </label>
+                <span id="distance-value">2 mi</span>
+            </div>
+            <input type="range" id="distance-slider" min="0.5" max="3" step="0.25" value="2" />
+            <div id="location-status"></div>
+        </div>
+        <div id="category-filters"></div>
+        <div id="event-list"></div>
+    </div>
+
+    <button id="sidebar-toggle" title="Show events list">&#9776;</button>
+
+    <div id="legend">
+        <div style="font-weight:600; margin-bottom:6px;">Categories</div>
+        <div id="legend-items"></div>
+        <div class="legend-row" style="margin-top:6px; padding-top:6px; border-top:1px solid #e5e7eb;">
+            <div class="legend-dot" style="background:#3b82f6; border: 3px solid #fff; box-shadow: 0 0 0 1.5px #3b82f6;"></div>
+            Your location
+        </div>
+        <div class="legend-row">
+            <div class="legend-dot" style="background:#9ca3af; border: 2px dashed #6b7280;"></div>
+            No fixed location
+        </div>
+    </div>
+
+    <div id="loading">Loading events...</div>
+
+    <script>
+        // ── Category colors ──────────────────────────────────────────────
+        const CATEGORY_COLORS = {
+            'Food & Drink':          { fill: '#ef4444', bg: '#fef2f2', text: '#991b1b', border: '#fecaca' },
+            'Art & Museums':         { fill: '#8b5cf6', bg: '#f5f3ff', text: '#5b21b6', border: '#ddd6fe' },
+            'Music & Entertainment': { fill: '#ec4899', bg: '#fdf2f8', text: '#9d174d', border: '#fbcfe8' },
+            'Sports & Fitness':      { fill: '#10b981', bg: '#ecfdf5', text: '#065f46', border: '#a7f3d0' },
+            'Shopping & Pop-Ups':    { fill: '#f59e0b', bg: '#fffbeb', text: '#92400e', border: '#fde68a' },
+            'Community & Culture':   { fill: '#3b82f6', bg: '#eff6ff', text: '#1e40af', border: '#bfdbfe' },
+            'Beauty & Wellness':     { fill: '#f472b6', bg: '#fdf2f8', text: '#be185d', border: '#fbcfe8' },
+            'Kids & Family':         { fill: '#06b6d4', bg: '#ecfeff', text: '#155e75', border: '#a5f3fc' },
+            'Other':                 { fill: '#6b7280', bg: '#f9fafb', text: '#374151', border: '#d1d5db' },
+        };
+
+        function getCatColor(category) {
+            return CATEGORY_COLORS[category] || CATEGORY_COLORS['Other'];
+        }
+
+        // Primary category = first in the list
+        function primaryCategory(event) {
+            return (event.categories && event.categories[0]) || 'Other';
+        }
+
+        // ── State ────────────────────────────────────────────────────────
+        let events = [];
+        let markers = [];
+        let activeEventId = null;
+        let activeCategories = new Set(Object.keys(CATEGORY_COLORS));
+
+        // ── User location state ──────────────────────────────────────────
+        let userLat = null;
+        let userLng = null;
+        let userMarker = null;
+        let radiusCircle = null;
+        let distanceFilterEnabled = false;
+        let distanceRadius = 2; // miles
+
+        // ── Map ──────────────────────────────────────────────────────────
+        const map = L.map('map', { zoomControl: true }).setView([40.745, -73.985], 12);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 19,
+        }).addTo(map);
+
+        // ── Date picker ──────────────────────────────────────────────────
+        const dateInput = document.getElementById('date-input');
+        const today = new Date();
+        dateInput.value = today.toISOString().split('T')[0];
+
+        document.getElementById('prev-day').addEventListener('click', () => shiftDate(-1));
+        document.getElementById('next-day').addEventListener('click', () => shiftDate(1));
+        dateInput.addEventListener('change', () => loadEvents());
+
+        function shiftDate(days) {
+            const d = new Date(dateInput.value + 'T12:00:00');
+            d.setDate(d.getDate() + days);
+            dateInput.value = d.toISOString().split('T')[0];
+            loadEvents();
+        }
+
+        // ── Format helpers ───────────────────────────────────────────────
+        function formatTime(isoStr) {
+            const d = new Date(isoStr);
+            return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+        function formatDateRange(start, end) {
+            const s = new Date(start);
+            const e = new Date(end);
+            const sameDay = s.toDateString() === e.toDateString();
+            if (sameDay) {
+                return `${formatTime(start)} – ${formatTime(end)}`;
+            }
+            const opts = { month: 'short', day: 'numeric' };
+            return `${s.toLocaleDateString('en-US', opts)} – ${e.toLocaleDateString('en-US', opts)}`;
+        }
+        function escHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str || '';
+            return div.innerHTML;
+        }
+
+        // ── Haversine distance (miles) ───────────────────────────────────
+        function haversineDistance(lat1, lng1, lat2, lng2) {
+            const R = 3958.8; // Earth radius in miles
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) ** 2 +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function getEventDistance(event) {
+            if (userLat == null || event.lat == null) return null;
+            return haversineDistance(userLat, userLng, event.lat, event.lng);
+        }
+
+        // ── Geolocation ──────────────────────────────────────────────────
+        function requestLocation() {
+            const statusEl = document.getElementById('location-status');
+            statusEl.textContent = 'Locating...';
+
+            if (!navigator.geolocation) {
+                statusEl.textContent = 'Geolocation not supported';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    userLat = pos.coords.latitude;
+                    userLng = pos.coords.longitude;
+                    statusEl.textContent = `Location found`;
+                    document.getElementById('distance-filter').classList.add('visible');
+                    distanceFilterEnabled = document.getElementById('distance-toggle').checked;
+                    placeUserMarker();
+                    updateRadiusCircle();
+                    renderMarkers();
+                    renderSidebar();
+                    updateCount();
+                },
+                (err) => {
+                    console.error('Geolocation error:', err);
+                    statusEl.textContent = err.code === 1 ? 'Location access denied' : 'Could not get location';
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        }
+
+        function placeUserMarker() {
+            if (userMarker) map.removeLayer(userMarker);
+            if (userLat == null) return;
+
+            userMarker = L.circleMarker([userLat, userLng], {
+                radius: 8,
+                fillColor: '#3b82f6',
+                fillOpacity: 1,
+                color: '#fff',
+                weight: 3,
+            }).addTo(map);
+
+            // Pulsing outer ring
+            const pulse = L.circleMarker([userLat, userLng], {
+                radius: 14,
+                fillColor: '#3b82f6',
+                fillOpacity: 0.15,
+                color: '#3b82f6',
+                weight: 1.5,
+                opacity: 0.4,
+            }).addTo(map);
+
+            userMarker._pulse = pulse;
+            userMarker.bindTooltip('You are here', { direction: 'top', offset: [0, -10] });
+        }
+
+        function updateRadiusCircle() {
+            if (radiusCircle) map.removeLayer(radiusCircle);
+            if (userLat == null || !distanceFilterEnabled) return;
+
+            const radiusMeters = distanceRadius * 1609.34; // miles to meters
+            radiusCircle = L.circle([userLat, userLng], {
+                radius: radiusMeters,
+                fillColor: '#6366f1',
+                fillOpacity: 0.04,
+                color: '#6366f1',
+                weight: 1.5,
+                dashArray: '6 4',
+                opacity: 0.4,
+            }).addTo(map);
+        }
+
+        // ── Distance filter controls ─────────────────────────────────────
+        document.getElementById('locate-me-btn').addEventListener('click', requestLocation);
+
+        const distanceSlider = document.getElementById('distance-slider');
+        const distanceValueEl = document.getElementById('distance-value');
+        const distanceToggle = document.getElementById('distance-toggle');
+
+        distanceSlider.addEventListener('input', () => {
+            distanceRadius = parseFloat(distanceSlider.value);
+            distanceValueEl.textContent = distanceRadius % 1 === 0
+                ? `${distanceRadius} mi` : `${distanceRadius.toFixed(1)} mi`;
+            updateRadiusCircle();
+            renderMarkers();
+            renderSidebar();
+            updateCount();
+        });
+
+        distanceToggle.addEventListener('change', () => {
+            distanceFilterEnabled = distanceToggle.checked;
+            distanceSlider.disabled = !distanceFilterEnabled;
+            updateRadiusCircle();
+            renderMarkers();
+            renderSidebar();
+            updateCount();
+        });
+
+        // ── Filtering ────────────────────────────────────────────────────
+        function isEventVisible(event) {
+            const cats = event.categories || ['Other'];
+            if (!cats.some(c => activeCategories.has(c))) return false;
+
+            // Distance filter
+            if (distanceFilterEnabled && userLat != null && event.lat != null && !event.location_unknown) {
+                const dist = haversineDistance(userLat, userLng, event.lat, event.lng);
+                if (dist > distanceRadius) return false;
+            }
+
+            return true;
+        }
+
+        function getVisibleEvents() {
+            return events.filter(isEventVisible);
+        }
+
+        // ── Load events ──────────────────────────────────────────────────
+        async function loadEvents() {
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+
+            try {
+                const resp = await fetch(`/api/events?date=${dateInput.value}`);
+                events = await resp.json();
+                if (events.error) events = [];
+            } catch (e) {
+                console.error('Failed to load events:', e);
+                events = [];
+            }
+
+            loading.style.display = 'none';
+            renderCategoryFilters();
+            renderMarkers();
+            renderSidebar();
+            updateCount();
+        }
+
+        // ── Category filter bar ──────────────────────────────────────────
+        function renderCategoryFilters() {
+            const container = document.getElementById('category-filters');
+
+            // Count events per category
+            const catCounts = {};
+            for (const cat of Object.keys(CATEGORY_COLORS)) {
+                catCounts[cat] = 0;
+            }
+            events.forEach(e => {
+                (e.categories || ['Other']).forEach(c => {
+                    catCounts[c] = (catCounts[c] || 0) + 1;
+                });
+            });
+
+            // Only show categories that have events
+            const activeCats = Object.keys(CATEGORY_COLORS).filter(c => catCounts[c] > 0);
+
+            let html = '';
+            activeCats.forEach(cat => {
+                const color = getCatColor(cat);
+                const isActive = activeCategories.has(cat);
+                const cls = isActive ? 'active' : 'inactive';
+                html += `<button class="cat-filter-btn ${cls}" data-category="${escHtml(cat)}"
+                    style="background:${color.bg}; border-color:${isActive ? color.fill : 'transparent'}; color:${color.text};">
+                    <span class="cat-dot" style="background:${color.fill}"></span>
+                    ${escHtml(cat)}
+                    <span class="cat-count">${catCounts[cat]}</span>
+                </button>`;
+            });
+
+            container.innerHTML = html;
+
+            // Click handlers
+            container.querySelectorAll('.cat-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const cat = btn.dataset.category;
+                    if (activeCategories.has(cat)) {
+                        activeCategories.delete(cat);
+                    } else {
+                        activeCategories.add(cat);
+                    }
+                    renderCategoryFilters();
+                    renderMarkers();
+                    renderSidebar();
+                    updateCount();
+                });
+            });
+        }
+
+        // ── Markers ──────────────────────────────────────────────────────
+        function clearMarkers() {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+        }
+
+        function renderMarkers() {
+            clearMarkers();
+            const visible = getVisibleEvents();
+
+            visible.forEach(event => {
+                if (event.lat == null || event.lng == null) return;
+
+                const isUnknown = event.location_unknown;
+                const cat = primaryCategory(event);
+                const color = getCatColor(cat);
+
+                const marker = L.circleMarker([event.lat, event.lng], {
+                    radius: isUnknown ? 8 : 7,
+                    fillColor: isUnknown ? '#9ca3af' : color.fill,
+                    fillOpacity: isUnknown ? 0.6 : 0.85,
+                    color: isUnknown ? '#6b7280' : '#fff',
+                    weight: isUnknown ? 2 : 1.5,
+                    dashArray: isUnknown ? '4 3' : null,
+                }).addTo(map);
+
+                marker.bindPopup(buildPopup(event), { maxWidth: 300 });
+                marker.on('click', () => {
+                    setActiveEvent(event.id);
+                });
+
+                marker._eventId = event.id;
+                markers.push(marker);
+            });
+        }
+
+        // ── Popup ────────────────────────────────────────────────────────
+        function buildPopup(event) {
+            let html = '<div class="event-popup">';
+
+            if (event.image_url) {
+                html += `<img src="${event.image_url}" alt="" loading="lazy" />`;
+            }
+
+            if (event.location_unknown) {
+                html += '<div class="popup-unknown">Location not specified — check event page</div>';
+            }
+
+            // Category badges
+            html += '<div class="popup-categories">';
+            (event.categories || ['Other']).forEach(cat => {
+                const color = getCatColor(cat);
+                html += `<span class="popup-cat-badge" style="background:${color.bg}; color:${color.text}; border:1px solid ${color.border};">${escHtml(cat)}</span>`;
+            });
+            html += '</div>';
+
+            html += `<h3>${escHtml(event.title)}</h3>`;
+            html += `<div class="popup-time">${formatDateRange(event.start_date, event.end_date)}</div>`;
+
+            if (event.address) {
+                const dist = getEventDistance(event);
+                const distStr = (dist != null && !event.location_unknown)
+                    ? ` · <span style="color:#6366f1; font-weight:600;">${dist < 0.1 ? '< 0.1' : dist.toFixed(1)} mi away</span>` : '';
+                html += `<div class="popup-address">${escHtml(event.address)}${distStr}</div>`;
+            }
+
+            if (event.description) {
+                const desc = event.description.length > 200
+                    ? event.description.slice(0, 200).trim() + '...'
+                    : event.description;
+                html += `<div class="popup-desc">${escHtml(desc)}</div>`;
+            }
+
+            html += `<a class="popup-link" href="${event.event_url}" target="_blank" rel="noopener">View Event &rarr;</a>`;
+            html += '</div>';
+            return html;
+        }
+
+        // ── Sidebar ──────────────────────────────────────────────────────
+        function renderSidebar() {
+            const list = document.getElementById('event-list');
+            const visible = getVisibleEvents();
+
+            const located = visible.filter(e => !e.location_unknown);
+            const unlocated = visible.filter(e => e.location_unknown);
+
+            let html = '';
+
+            if (located.length > 0) {
+                html += '<div class="section-header">Events</div>';
+                located.forEach(e => { html += buildEventItem(e); });
+            }
+
+            if (unlocated.length > 0) {
+                html += '<div class="section-header">No fixed location</div>';
+                unlocated.forEach(e => { html += buildEventItem(e); });
+            }
+
+            if (visible.length === 0) {
+                html = '<div style="padding:24px 16px; text-align:center; color:#9ca3af;">No events match the selected filters</div>';
+            }
+
+            list.innerHTML = html;
+
+            // Attach click handlers
+            list.querySelectorAll('.event-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const id = item.dataset.id;
+                    const event = events.find(e => e.id === id);
+                    if (!event) return;
+                    setActiveEvent(id);
+                    const marker = markers.find(m => m._eventId === id);
+                    if (marker) {
+                        map.setView(marker.getLatLng(), 14, { animate: true });
+                        marker.openPopup();
+                    }
+                });
+            });
+        }
+
+        function buildEventItem(event) {
+            const isActive = event.id === activeEventId;
+            const cat = primaryCategory(event);
+            const color = getCatColor(cat);
+
+            let html = `<div class="event-item${isActive ? ' active' : ''}" data-id="${event.id}">`;
+            html += `<div class="event-item-dot" style="background:${event.location_unknown ? '#9ca3af' : color.fill}"></div>`;
+            html += '<div class="event-item-content">';
+            html += `<div class="event-title">${escHtml(event.title)}</div>`;
+            html += `<div class="event-meta">${formatDateRange(event.start_date, event.end_date)}`;
+            if (event.address) {
+                const shortAddr = event.address.split(',')[0];
+                html += ` · ${escHtml(shortAddr)}`;
+            }
+            const dist = getEventDistance(event);
+            if (dist != null && !event.location_unknown) {
+                html += ` · <span style="color:#6366f1; font-weight:600;">${dist < 0.1 ? '< 0.1' : dist.toFixed(1)} mi</span>`;
+            }
+            html += '</div>';
+            if (event.location_unknown) {
+                html += '<span class="no-location-badge">No fixed location</span> ';
+            }
+            (event.categories || ['Other']).forEach(cat => {
+                const c = getCatColor(cat);
+                html += `<span class="event-tag" style="background:${c.bg}; color:${c.text};">${escHtml(cat)}</span>`;
+            });
+            html += '</div></div>';
+            return html;
+        }
+
+        function setActiveEvent(id) {
+            activeEventId = id;
+            document.querySelectorAll('.event-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.id === id);
+            });
+        }
+
+        function updateCount() {
+            const el = document.getElementById('event-count');
+            const visible = getVisibleEvents();
+            const n = visible.length;
+            const total = events.length;
+            if (n === total) {
+                el.textContent = n === 0 ? 'No events' : `${n} event${n !== 1 ? 's' : ''}`;
+            } else {
+                el.textContent = `${n} of ${total} events`;
+            }
+        }
+
+        // ── Legend ────────────────────────────────────────────────────────
+        function renderLegend() {
+            const container = document.getElementById('legend-items');
+            let html = '';
+            for (const [cat, color] of Object.entries(CATEGORY_COLORS)) {
+                html += `<div class="legend-row"><div class="legend-dot" style="background:${color.fill}"></div> ${cat}</div>`;
+            }
+            container.innerHTML = html;
+        }
+        renderLegend();
+
+        // ── Sidebar toggle (mobile) ──────────────────────────────────────
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarClose = document.getElementById('sidebar-close');
+
+        function checkMobile() {
+            if (window.innerWidth <= 700) {
+                sidebar.classList.add('collapsed');
+                sidebarToggle.classList.add('visible');
+                sidebarClose.style.display = 'block';
+            } else {
+                sidebar.classList.remove('collapsed');
+                sidebarToggle.classList.remove('visible');
+                sidebarClose.style.display = 'none';
+            }
+        }
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.remove('collapsed');
+            sidebarToggle.classList.remove('visible');
+        });
+        sidebarClose.addEventListener('click', () => {
+            sidebar.classList.add('collapsed');
+            sidebarToggle.classList.add('visible');
+        });
+
+        window.addEventListener('resize', checkMobile);
+        checkMobile();
+
+        // ── Init ─────────────────────────────────────────────────────────
+        loadEvents();
+
+        if (window.innerWidth > 700) {
+            map.panBy([-160, 0], { animate: false });
+        }
+    </script>
+</body>
+</html>

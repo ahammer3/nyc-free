@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: nyc-free-events
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: PORT
+        value: 8000
+    plan: free
