@@ -332,5 +332,109 @@
   "11 Madison Avenue, New York, NY, 10010": [
     40.7415982,
     -73.9871904
+  ],
+  "New York, NY, 10003": [
+    40.7127281,
+    -74.0060152
+  ],
+  "99 MacDougal Street, New York, NY, 10012": [
+    40.7296565,
+    -74.001091
+  ],
+  "18 West Houston Street, New York, NY, 10012": [
+    40.7257247,
+    -73.9970561
+  ],
+  "20 Hudson Yards, New York, NY, 10001": [
+    40.7559064,
+    -74.0005322
+  ],
+  "1560 Broadway, New York, NY, 10036": [
+    40.7589843,
+    -73.9851043
+  ],
+  "1460 Broadway, New York, NY, 10036": [
+    40.7550556,
+    -73.9864227
+  ],
+  "300 Bleecker Street, New York, NY, 10014": [
+    40.7324433,
+    -74.0038307
+  ],
+  "262 Mott Street, New York, NY, 10012": [
+    40.7238034,
+    -73.9943123
+  ],
+  "1333 Broadway, New York, NY, 10018": [
+    40.7512127,
+    -73.9879717
+  ],
+  "169 Bowery, New York, NY, 10002": [
+    40.7198699,
+    -73.9938131
+  ],
+  "177 Lafayette Street, New York, NY, 10013": [
+    40.7201134,
+    -73.9988044
+  ],
+  "46 Market Street, New York, NY, 10002": [
+    40.7120557,
+    -73.9941988
+  ],
+  "145 Stanton Street, New York, NY, 10002": [
+    40.7200452,
+    -73.9860348
+  ],
+  "254 Bleecker Street, New York, NY, 10014": [
+    40.7310049,
+    -74.0030253
+  ],
+  "1 Wall Street, New York, NY, 10005": [
+    40.7071243,
+    -74.0118265
+  ],
+  "140 Church Street, Hermanus, WC, 7200": [
+    -34.4242783,
+    19.2287792
+  ],
+  "200 Eastern Parkway, Brooklyn, NY, 11238": [
+    40.6709546,
+    -73.9632948
+  ],
+  "West 47th Street, New York, NY, 10036": [
+    40.7593303,
+    -73.9848782
+  ],
+  "89 East 42nd Street, New York, NY, 10017": [
+    40.7526944,
+    -73.977253
+  ],
+  "93 1st Avenue, New York, NY, 10003": [
+    40.7262893,
+    -73.9865727
+  ],
+  "600 Broadway, Brooklyn, NY, 11206": [
+    40.703069,
+    -73.946184
+  ],
+  "620 Broadway, New York, NY, 10012": [
+    40.7257759,
+    -73.996277
+  ],
+  "East 10th Street, New York, NY, 10009": [
+    40.7283111,
+    -73.9833411
+  ],
+  "22-25 Jackson Avenue, Queens, NY, 11101": [
+    40.7473926,
+    -73.9415119
+  ],
+  "5th Avenue, New York, NY, 10029": [
+    40.7954554,
+    -73.9502522
+  ],
+  "89 South Street, New York, NY, 10038": [
+    40.7051819,
+    -74.0024556
   ]
 }

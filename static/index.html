@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffffff">
     <title>NYC Free Events Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -175,6 +178,118 @@
             font-family: inherit;
         }
         .location-btn:hover { background: #4f46e5; }
+
+        /* Time filter */
+        #time-filter {
+            padding: 10px 14px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        #time-filter-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        #time-filter-header label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #374151;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        #time-toggle {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #6366f1;
+        }
+        #time-range-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6366f1;
+            text-align: right;
+        }
+        #time-hint {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+        }
+
+        /* Dual range slider */
+        .dual-range {
+            position: relative;
+            height: 24px;
+            margin-top: 2px;
+        }
+        .dual-range input[type="range"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            pointer-events: none;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            margin: 0;
+            height: 24px;
+        }
+        .dual-range input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            pointer-events: all;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
+            position: relative;
+            z-index: 2;
+        }
+        .dual-range input[type="range"]::-moz-range-thumb {
+            pointer-events: all;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6366f1;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            cursor: pointer;
+        }
+        .dual-range input[type="range"]::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 2px;
+            background: transparent;
+        }
+        .dual-range input[type="range"]::-moz-range-track {
+            height: 4px;
+            border-radius: 2px;
+            background: transparent;
+        }
+        .dual-range-track {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            border-radius: 2px;
+            background: #e5e7eb;
+        }
+        .dual-range-fill {
+            position: absolute;
+            top: 10px;
+            height: 4px;
+            border-radius: 2px;
+            background: #6366f1;
+        }
+        .dual-range.disabled input[type="range"] { pointer-events: none; }
+        .dual-range.disabled input[type="range"]::-webkit-slider-thumb {
+            background: #d1d5db;
+            cursor: not-allowed;
+        }
+        .dual-range.disabled .dual-range-fill { background: #d1d5db; }
+        .dual-range.disabled { opacity: 0.3; }
 
         /* Category filter bar */
         #category-filters {
@@ -375,11 +490,175 @@
             display: none;
         }
 
-        /* Responsive */
+        /* Responsive — mobile-first phone layout */
         @media (max-width: 700px) {
-            #sidebar { width: 280px; }
-            #top-bar { left: 12px; right: 12px; transform: none; }
+            /* Safe area for notched phones */
+            body {
+                padding-top: env(safe-area-inset-top);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+
+            /* Top bar: compact, full width */
+            #top-bar {
+                left: 8px;
+                right: 8px;
+                top: calc(8px + env(safe-area-inset-top));
+                transform: none;
+                padding: 8px 12px;
+                gap: 6px;
+                border-radius: 10px;
+            }
             #top-bar h1 { display: none; }
+            #date-input {
+                font-size: 16px; /* prevents iOS zoom on focus */
+                padding: 6px 8px;
+                min-width: 0;
+                flex: 1;
+            }
+            .nav-btn {
+                width: 44px;
+                height: 44px;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                flex-shrink: 0;
+            }
+            #event-count { display: none; }
+            .location-btn#locate-me-btn {
+                height: 44px;
+                padding: 0 12px;
+                font-size: 12px;
+                border-radius: 8px;
+                flex-shrink: 0;
+            }
+
+            /* Sidebar becomes bottom sheet */
+            #sidebar {
+                top: auto;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100%;
+                max-height: 55vh;
+                border-radius: 16px 16px 0 0;
+                transform: translateY(calc(100% - 44px));
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            #sidebar.collapsed {
+                transform: translateY(100%);
+            }
+            #sidebar.expanded {
+                transform: translateY(0);
+            }
+
+            /* Drag handle for bottom sheet */
+            #sidebar-header {
+                padding: 8px 16px 10px;
+                cursor: grab;
+                position: relative;
+            }
+            #sidebar-header::before {
+                content: '';
+                display: block;
+                width: 36px;
+                height: 4px;
+                background: #d1d5db;
+                border-radius: 2px;
+                margin: 0 auto 8px;
+            }
+            #sidebar-close { display: none !important; }
+
+            /* Toggle button becomes floating pill at bottom */
+            #sidebar-toggle {
+                bottom: calc(12px + env(safe-area-inset-bottom));
+                top: auto;
+                left: 50%;
+                transform: translateX(-50%);
+                width: auto;
+                padding: 10px 20px;
+                font-size: 14px;
+                font-weight: 600;
+                border-radius: 24px;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+            }
+            #sidebar-toggle.visible { display: flex; }
+
+            /* Larger touch targets for filters */
+            #distance-toggle, #time-toggle {
+                width: 22px;
+                height: 22px;
+            }
+            #distance-filter, #time-filter {
+                padding: 10px 16px;
+            }
+            #distance-slider {
+                height: 44px; /* larger touch area */
+            }
+            .dual-range {
+                height: 44px;
+            }
+            .dual-range input[type="range"] {
+                height: 44px;
+            }
+            .dual-range-track {
+                top: 20px;
+            }
+            .dual-range-fill {
+                top: 20px;
+            }
+            .dual-range input[type="range"]::-webkit-slider-thumb {
+                width: 24px;
+                height: 24px;
+            }
+
+            /* Category filters: horizontally scrollable */
+            #category-filters {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding: 8px 12px;
+            }
+            #category-filters::-webkit-scrollbar { display: none; }
+            .cat-filter-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+
+            /* Event list: smooth scroll */
+            #event-list {
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+            }
+            .event-item {
+                padding: 12px 16px;
+            }
+
+            /* Hide legend on mobile — category pills serve this purpose */
+            #legend { display: none; }
+
+            /* Popup sizing for mobile */
+            .event-popup { max-width: 260px; }
+            .leaflet-popup-content { margin: 10px 12px; }
+
+            /* Prevent text selection on interactive elements */
+            .nav-btn, .cat-filter-btn, .location-btn, #sidebar-header {
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 380px) {
+            #top-bar { padding: 6px 8px; gap: 4px; }
+            .nav-btn { width: 40px; height: 40px; }
+            .location-btn#locate-me-btn { padding: 0 8px; font-size: 11px; }
         }
     </style>
 </head>
@@ -411,11 +690,30 @@
             <input type="range" id="distance-slider" min="0.5" max="3" step="0.25" value="2" />
             <div id="location-status"></div>
         </div>
+        <div id="time-filter">
+            <div id="time-filter-header">
+                <label>
+                    <input type="checkbox" id="time-toggle" />
+                    Time window
+                </label>
+                <span id="time-range-label">10 AM – 6 PM</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <div class="dual-range disabled" id="time-range" style="flex:1;">
+                    <div class="dual-range-track"></div>
+                    <div class="dual-range-fill" id="time-range-fill"></div>
+                    <input type="range" id="time-slider-min" min="0" max="95" step="1" value="40" />
+                    <input type="range" id="time-slider-max" min="0" max="95" step="1" value="72" />
+                </div>
+                <button class="location-btn" id="time-now-btn" style="padding:3px 8px; font-size:10px;">Now</button>
+            </div>
+            <div id="time-hint">Multi-day events always shown</div>
+        </div>
         <div id="category-filters"></div>
         <div id="event-list"></div>
     </div>
 
-    <button id="sidebar-toggle" title="Show events list">&#9776;</button>
+    <button id="sidebar-toggle" title="Show events list">&#9776; Events</button>
 
     <div id="legend">
         <div style="font-weight:600; margin-bottom:6px;">Categories</div>
@@ -468,6 +766,11 @@
         let radiusCircle = null;
         let distanceFilterEnabled = false;
         let distanceRadius = 2; // miles
+
+        // ── Time filter state ────────────────────────────────────────────
+        let timeFilterEnabled = false;
+        let timeMinFrom = 600;  // 10:00 AM = 40 * 15
+        let timeMinTo = 1080;   // 6:00 PM  = 72 * 15
 
         // ── Map ──────────────────────────────────────────────────────────
         const map = L.map('map', { zoomControl: true }).setView([40.745, -73.985], 12);
@@ -628,6 +931,111 @@
             updateCount();
         });
 
+        // ── Time filter controls ──────────────────────────────────────────
+        const timeSliderMin = document.getElementById('time-slider-min');
+        const timeSliderMax = document.getElementById('time-slider-max');
+        const timeRangeLabel = document.getElementById('time-range-label');
+        const timeRangeEl = document.getElementById('time-range');
+        const timeRangeFill = document.getElementById('time-range-fill');
+        const timeToggle = document.getElementById('time-toggle');
+
+        function minutesToLabel(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            const ampm = h < 12 ? 'AM' : 'PM';
+            const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+            return m === 0 ? `${h12}:00 ${ampm}` : `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+        }
+
+        function updateTimeRangeUI() {
+            timeRangeLabel.textContent = `${minutesToLabel(timeMinFrom)} – ${minutesToLabel(timeMinTo)}`;
+            // Update the fill bar position
+            const pctMin = (parseInt(timeSliderMin.value) / 95) * 100;
+            const pctMax = (parseInt(timeSliderMax.value) / 95) * 100;
+            timeRangeFill.style.left = pctMin + '%';
+            timeRangeFill.style.width = (pctMax - pctMin) + '%';
+        }
+
+        function onTimeSliderInput() {
+            let minVal = parseInt(timeSliderMin.value);
+            let maxVal = parseInt(timeSliderMax.value);
+
+            // Prevent crossing
+            if (minVal > maxVal) {
+                if (this === timeSliderMin) {
+                    timeSliderMin.value = maxVal;
+                    minVal = maxVal;
+                } else {
+                    timeSliderMax.value = minVal;
+                    maxVal = minVal;
+                }
+            }
+
+            timeMinFrom = minVal * 15;
+            timeMinTo = maxVal * 15;
+            updateTimeRangeUI();
+            renderMarkers();
+            renderSidebar();
+            updateCount();
+        }
+
+        timeSliderMin.addEventListener('input', onTimeSliderInput);
+        timeSliderMax.addEventListener('input', onTimeSliderInput);
+
+        timeToggle.addEventListener('change', () => {
+            timeFilterEnabled = timeToggle.checked;
+            timeRangeEl.classList.toggle('disabled', !timeFilterEnabled);
+            renderMarkers();
+            renderSidebar();
+            updateCount();
+        });
+
+        document.getElementById('time-now-btn').addEventListener('click', () => {
+            const now = new Date();
+            const nowMins = now.getHours() * 60 + now.getMinutes();
+            const fromMins = Math.round(nowMins / 15) * 15;
+            // Set range: now to +3 hours (or end of day)
+            const toMins = Math.min(fromMins + 180, 1425);
+
+            timeMinFrom = fromMins;
+            timeMinTo = toMins;
+            timeSliderMin.value = fromMins / 15;
+            timeSliderMax.value = toMins / 15;
+            updateTimeRangeUI();
+
+            if (!timeFilterEnabled) {
+                timeFilterEnabled = true;
+                timeToggle.checked = true;
+                timeRangeEl.classList.remove('disabled');
+            }
+            renderMarkers();
+            renderSidebar();
+            updateCount();
+        });
+
+        // Initial fill bar position
+        updateTimeRangeUI();
+
+        function isMultiDayEvent(event) {
+            const s = new Date(event.start_date);
+            const e = new Date(event.end_date);
+            return s.toDateString() !== e.toDateString();
+        }
+
+        function isEventInTimeWindow(event, fromMins, toMins) {
+            // Multi-day events: always show
+            if (isMultiDayEvent(event)) return true;
+
+            const s = new Date(event.start_date);
+            const e = new Date(event.end_date);
+            const startMins = s.getHours() * 60 + s.getMinutes();
+            const endMins = e.getHours() * 60 + e.getMinutes();
+
+            // Event overlaps with the time window if it starts before window ends
+            // AND ends after window starts
+            return startMins < toMins && endMins > fromMins;
+        }
+
         // ── Filtering ────────────────────────────────────────────────────
         function isEventVisible(event) {
             const cats = event.categories || ['Other'];
@@ -637,6 +1045,11 @@
             if (distanceFilterEnabled && userLat != null && event.lat != null && !event.location_unknown) {
                 const dist = haversineDistance(userLat, userLng, event.lat, event.lng);
                 if (dist > distanceRadius) return false;
+            }
+
+            // Time filter
+            if (timeFilterEnabled && !isEventInTimeWindow(event, timeMinFrom, timeMinTo)) {
+                return false;
             }
 
             return true;
@@ -897,34 +1310,94 @@
         }
         renderLegend();
 
-        // ── Sidebar toggle (mobile) ──────────────────────────────────────
+        // ── Sidebar toggle / bottom sheet (mobile) ─────────────────────
         const sidebar = document.getElementById('sidebar');
         const sidebarToggle = document.getElementById('sidebar-toggle');
         const sidebarClose = document.getElementById('sidebar-close');
+        const isMobile = () => window.innerWidth <= 700;
 
         function checkMobile() {
-            if (window.innerWidth <= 700) {
-                sidebar.classList.add('collapsed');
+            if (isMobile()) {
+                sidebar.classList.remove('expanded');
+                sidebar.classList.remove('collapsed');
                 sidebarToggle.classList.add('visible');
-                sidebarClose.style.display = 'block';
+                sidebarClose.style.display = 'none';
+                // Start in peek state (shows drag handle via translateY(calc(100% - 44px)))
             } else {
                 sidebar.classList.remove('collapsed');
+                sidebar.classList.remove('expanded');
                 sidebarToggle.classList.remove('visible');
                 sidebarClose.style.display = 'none';
             }
         }
 
         sidebarToggle.addEventListener('click', () => {
-            sidebar.classList.remove('collapsed');
-            sidebarToggle.classList.remove('visible');
+            if (isMobile()) {
+                sidebar.classList.add('expanded');
+                sidebarToggle.classList.remove('visible');
+            } else {
+                sidebar.classList.remove('collapsed');
+                sidebarToggle.classList.remove('visible');
+            }
         });
+
         sidebarClose.addEventListener('click', () => {
             sidebar.classList.add('collapsed');
             sidebarToggle.classList.add('visible');
         });
 
+        // Bottom sheet: tap header to toggle, swipe down to collapse
+        const sidebarHeader = document.getElementById('sidebar-header');
+        sidebarHeader.addEventListener('click', () => {
+            if (!isMobile()) return;
+            if (sidebar.classList.contains('expanded')) {
+                sidebar.classList.remove('expanded');
+                sidebarToggle.classList.add('visible');
+            } else {
+                sidebar.classList.add('expanded');
+                sidebarToggle.classList.remove('visible');
+            }
+        });
+
+        // Touch swipe to dismiss bottom sheet
+        let touchStartY = 0;
+        let touchCurrentY = 0;
+        let isSwiping = false;
+
+        sidebarHeader.addEventListener('touchstart', (e) => {
+            if (!isMobile()) return;
+            touchStartY = e.touches[0].clientY;
+            isSwiping = true;
+        }, { passive: true });
+
+        sidebarHeader.addEventListener('touchmove', (e) => {
+            if (!isSwiping || !isMobile()) return;
+            touchCurrentY = e.touches[0].clientY;
+            const dy = touchCurrentY - touchStartY;
+            if (dy > 0 && sidebar.classList.contains('expanded')) {
+                sidebar.style.transform = `translateY(${dy}px)`;
+            }
+        }, { passive: true });
+
+        sidebarHeader.addEventListener('touchend', () => {
+            if (!isSwiping || !isMobile()) return;
+            isSwiping = false;
+            const dy = touchCurrentY - touchStartY;
+            sidebar.style.transform = '';
+            if (dy > 80) {
+                // Swipe down far enough — collapse
+                sidebar.classList.remove('expanded');
+                sidebarToggle.classList.add('visible');
+            }
+        });
+
         window.addEventListener('resize', checkMobile);
         checkMobile();
+
+        // Auto-request location on mobile
+        if (isMobile() && navigator.geolocation) {
+            requestLocation();
+        }
 
         // ── Init ─────────────────────────────────────────────────────────
         loadEvents();
