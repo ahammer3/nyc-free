@@ -37,12 +37,18 @@ async def get_events(date: str = Query(None, description="YYYY-MM-DD")):
     events = resolve_coordinates(events)
 
     # Filter: event overlaps with the target date
+    target_weekday = target.weekday()  # 0=Mon, 6=Sun
+
     filtered = []
     for e in events:
         start_ms = e["start_ts"]
         end_ms = e["end_ts"]
         # Event spans at least part of the target day
         if start_ms <= target_end.timestamp() * 1000 and end_ms >= target_start.timestamp() * 1000:
+            # Check day-of-week restrictions for multi-day events
+            active_days = e.get("active_days")
+            is_active_today = active_days is None or target_weekday in active_days
+
             filtered.append({
                 "id": e["id"],
                 "title": e["title"],
@@ -57,6 +63,10 @@ async def get_events(date: str = Query(None, description="YYYY-MM-DD")):
                 "location_unknown": e["location_unknown"],
                 "tags": e["tags"],
                 "categories": e["categories"],
+                "is_multi_day": e.get("is_multi_day", False),
+                "operating_hours": e.get("operating_hours"),
+                "active_days": active_days,
+                "is_active_today": is_active_today,
             })
 
     return filtered

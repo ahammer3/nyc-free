@@ -75,7 +75,7 @@ CATEGORY_RULES = [
 ]
 
 
-def categorize_event(title: str) -> list[str]:
+def categorize_event(title: str):
     """Assign category tags to an event based on its title."""
     text = title.lower()
     cats = []
@@ -100,7 +100,7 @@ def _strip_html(html: str, max_len: int = 300) -> str:
     return text
 
 
-def _extract_image(event: dict) -> str | None:
+def _extract_image(event: dict):
     """Extract the best image URL for an event."""
     # Body HTML contains the real CDN image URLs via data-src attributes.
     # assetUrl is a Squarespace static path that doesn't serve images directly.
@@ -124,11 +124,161 @@ def _has_real_location(location: dict) -> bool:
     return len(addr1) > 0
 
 
+# Day-of-week mapping: name → Python weekday (0=Mon, 6=Sun)
+_DAY_MAP = {
+    "mon": 0, "monday": 0,
+    "tue": 1, "tuesday": 1,
+    "wed": 2, "wednesday": 2,
+    "thu": 3, "thursday": 3,
+    "fri": 4, "friday": 4,
+    "sat": 5, "saturday": 5,
+    "sun": 6, "sunday": 6,
+}
+
+
+def _day_name_to_int(name: str):
+    """Convert a day name (or abbreviation) to Python weekday int (0=Mon, 6=Sun)."""
+    return _DAY_MAP.get(name.lower().rstrip("s"))
+
+
+def _expand_day_range(start_day: str, end_day: str):
+    """Expand 'Tuesday-Saturday' into a set of weekday ints."""
+    s = _day_name_to_int(start_day)
+    e = _day_name_to_int(end_day)
+    if s is None or e is None:
+        return set()
+    days = set()
+    i = s
+    while True:
+        days.add(i)
+        if i == e:
+            break
+        i = (i + 1) % 7
+    return days
+
+
+def _extract_active_days(body_html: str):
+    """Extract which days of the week an event is active from its description.
+
+    Returns a set of Python weekday ints (0=Mon, 6=Sun), or None if
+    no day restrictions were found (meaning assume all days).
+    """
+    if not body_html:
+        return None
+
+    text = BeautifulSoup(body_html, "html.parser").get_text(separator=" ", strip=True)
+    text = unescape(re.sub(r"\s+", " ", text))
+
+    # Check for 'daily' / 'everyday' / 'every day' → all days
+    if re.search(r"(?i)\b(daily|every\s*day|everyday|7\s*days\s*a\s*week)\b", text):
+        return None  # no restriction
+
+    active_days = set()
+
+    # Pattern 1: Day ranges like "Tuesday-Saturday", "Mon–Fri", "Thursday — Sunday"
+    day_ranges = re.findall(
+        r"(?i)\b(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)"
+        r"\s*[-–—]\s*"
+        r"(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b",
+        text,
+    )
+    for start_d, end_d in day_ranges:
+        active_days |= _expand_day_range(start_d, end_d)
+
+    # Pattern 2: Standalone day names followed by times or colons
+    # e.g. "Fridays: 9-10AM", "Saturdays 4-5PM", "Fridays 9–10AM | Saturdays 9–10AM"
+    day_schedule = re.findall(
+        r"(?i)\b(mon(?:day)?s?|tue(?:sday)?s?|wed(?:nesday)?s?|thu(?:rsday)?s?|fri(?:day)?s?|sat(?:urday)?s?|sun(?:day)?s?)"
+        r"\s*[:|]\s*\d{1,2}",
+        text,
+    )
+    for d in day_schedule:
+        di = _day_name_to_int(d)
+        if di is not None:
+            active_days.add(di)
+
+    # Pattern 3: "Every [day]" e.g. "Every Saturday"
+    every_matches = re.findall(
+        r"(?i)\bevery\s+(mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?|sun(?:day)?)\b",
+        text,
+    )
+    for d in every_matches:
+        di = _day_name_to_int(d)
+        if di is not None:
+            active_days.add(di)
+
+    return active_days if active_days else None
+
+
+def _parse_time_to_minutes(t: str):
+    """Parse a time string like '11AM', '6:00PM', '3 PM' into minutes since midnight."""
+    t = t.strip().lower().replace(".", "")
+    m = re.match(r"(\d{1,2})\s*(?::(\d{2}))?\s*(am|pm)", t)
+    if not m:
+        return None
+    hour = int(m.group(1))
+    mins = int(m.group(2)) if m.group(2) else 0
+    ampm = m.group(3)
+    if ampm == "pm" and hour != 12:
+        hour += 12
+    elif ampm == "am" and hour == 12:
+        hour = 0
+    return hour * 60 + mins
+
+
+def _extract_operating_hours(body_html: str):
+    """Extract operating hours from event description HTML.
+
+    Returns dict with 'open' and 'close' as minutes since midnight,
+    representing the most common/general operating window.
+    Returns None if no hours found.
+    """
+    if not body_html:
+        return None
+
+    text = BeautifulSoup(body_html, "html.parser").get_text(separator=" ", strip=True)
+    text = unescape(re.sub(r"\s+", " ", text))
+
+    # Match time ranges like "11AM-6PM", "10:00 am - 8:00 pm", "3 PM to 6 PM"
+    ranges = re.findall(
+        r"(\d{1,2}\s*(?::\d{2})?\s*(?:am|pm|a\.?m\.?|p\.?m\.?))"
+        r"\s*[-\u2013\u2014]+\s*"
+        r"(\d{1,2}\s*(?::\d{2})?\s*(?:am|pm|a\.?m\.?|p\.?m\.?))",
+        text,
+        re.IGNORECASE,
+    )
+
+    if not ranges:
+        return None
+
+    # Parse all ranges and find the widest window (most generous hours)
+    earliest_open = None
+    latest_close = None
+
+    for open_str, close_str in ranges:
+        open_mins = _parse_time_to_minutes(open_str)
+        close_mins = _parse_time_to_minutes(close_str)
+        if open_mins is None or close_mins is None:
+            continue
+        if close_mins <= open_mins:
+            continue  # skip nonsensical ranges
+
+        if earliest_open is None or open_mins < earliest_open:
+            earliest_open = open_mins
+        if latest_close is None or close_mins > latest_close:
+            latest_close = close_mins
+
+    if earliest_open is not None and latest_close is not None:
+        return {"open": earliest_open, "close": latest_close}
+
+    return None
+
+
 def _ms_to_datetime(ms: int) -> datetime:
     return datetime.fromtimestamp(ms / 1000, tz=timezone.utc)
 
 
-def fetch_events() -> list[dict]:
+def fetch_events():
     """Fetch events from the API, using cache if fresh."""
     now = time.time()
     if _cache["events"] is not None and (now - _cache["fetched_at"]) < CACHE_TTL:
@@ -160,6 +310,17 @@ def fetch_events() -> list[dict]:
 
         start_dt = _ms_to_datetime(raw["startDate"])
         end_dt = _ms_to_datetime(raw["endDate"])
+        is_multi_day = start_dt.date() != end_dt.date()
+
+        # For multi-day events, try to extract real operating hours and active days
+        operating_hours = None
+        active_days = None  # None = all days, else set of weekday ints
+        if is_multi_day:
+            body_html = raw.get("body", "")
+            operating_hours = _extract_operating_hours(body_html)
+            active_days_set = _extract_active_days(body_html)
+            if active_days_set is not None:
+                active_days = sorted(active_days_set)  # list for JSON
 
         event = {
             "id": raw.get("id", ""),
@@ -170,6 +331,9 @@ def fetch_events() -> list[dict]:
             "end_date": end_dt.isoformat(),
             "start_ts": raw["startDate"],
             "end_ts": raw["endDate"],
+            "is_multi_day": is_multi_day,
+            "operating_hours": operating_hours,
+            "active_days": active_days,
             "lat": lat,
             "lng": lng,
             "address": address,

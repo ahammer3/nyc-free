@@ -65,8 +65,8 @@
             position: absolute;
             top: 70px;
             left: 12px;
-            bottom: 24px;
             width: 340px;
+            max-height: calc(100vh - 100px);
             z-index: 1000;
             background: white;
             border-radius: 12px;
@@ -74,7 +74,6 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: transform 0.3s ease;
         }
         #sidebar.collapsed {
             transform: translateX(-352px);
@@ -115,6 +114,51 @@
             cursor: pointer;
             color: #9ca3af;
             display: none;
+        }
+
+        /* Draggable panels */
+        .draggable-header {
+            cursor: grab;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .draggable-header:active { cursor: grabbing; }
+        .dragging {
+            opacity: 0.9;
+            transition: none !important;
+        }
+
+        /* Minimize toggles */
+        .minimize-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            color: #9ca3af;
+            padding: 4px;
+            line-height: 1;
+            transition: transform 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .minimize-btn:hover { color: #6b7280; }
+        .minimize-btn.minimized { transform: rotate(180deg); }
+
+        /* Sidebar minimized: only show header */
+        #sidebar.minimized {
+            bottom: auto !important;
+            max-height: none !important;
+        }
+        #sidebar.minimized #distance-filter,
+        #sidebar.minimized #time-filter,
+        #sidebar.minimized #category-filters,
+        #sidebar.minimized #event-list {
+            display: none !important;
+        }
+
+        /* Legend minimized: only show title row */
+        #legend.minimized #legend-items,
+        #legend.minimized .legend-row {
+            display: none !important;
         }
 
         /* Distance filter */
@@ -346,6 +390,18 @@
         }
         .event-item:hover { background: #f3f4f6; }
         .event-item.active { background: #eef2ff; }
+        .event-item.inactive-today {
+            opacity: 0.45;
+        }
+        .inactive-badge {
+            display: inline-block;
+            font-size: 10px;
+            background: #f3f4f6;
+            color: #9ca3af;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-top: 3px;
+        }
         .event-item-dot {
             width: 10px;
             height: 10px;
@@ -675,9 +731,12 @@
     </div>
 
     <div id="sidebar">
-        <div id="sidebar-header">
+        <div id="sidebar-header" class="draggable-header">
             <span>Events</span>
-            <button id="sidebar-close" title="Close sidebar">&times;</button>
+            <div style="display:flex; align-items:center; gap:4px;">
+                <button class="minimize-btn" id="sidebar-minimize" title="Minimize">&#x25B2;</button>
+                <button id="sidebar-close" title="Close sidebar">&times;</button>
+            </div>
         </div>
         <div id="distance-filter">
             <div id="distance-filter-header">
@@ -716,7 +775,10 @@
     <button id="sidebar-toggle" title="Show events list">&#9776; Events</button>
 
     <div id="legend">
-        <div style="font-weight:600; margin-bottom:6px;">Categories</div>
+        <div id="legend-header" class="draggable-header" style="font-weight:600; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
+            Categories
+            <button class="minimize-btn" id="legend-minimize" title="Minimize">&#x25B2;</button>
+        </div>
         <div id="legend-items"></div>
         <div class="legend-row" style="margin-top:6px; padding-top:6px; border-top:1px solid #e5e7eb;">
             <div class="legend-dot" style="background:#3b82f6; border: 3px solid #fff; box-shadow: 0 0 0 1.5px #3b82f6;"></div>
@@ -800,7 +862,7 @@
             const d = new Date(isoStr);
             return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
         }
-        function formatDateRange(start, end) {
+        function formatDateRange(start, end, event) {
             const s = new Date(start);
             const e = new Date(end);
             const sameDay = s.toDateString() === e.toDateString();
@@ -808,7 +870,12 @@
                 return `${formatTime(start)} – ${formatTime(end)}`;
             }
             const opts = { month: 'short', day: 'numeric' };
-            return `${s.toLocaleDateString('en-US', opts)} – ${e.toLocaleDateString('en-US', opts)}`;
+            let range = `${s.toLocaleDateString('en-US', opts)} – ${e.toLocaleDateString('en-US', opts)}`;
+            // Append parsed operating hours if available
+            if (event && event.operating_hours) {
+                range += ` · ${minutesToLabel(event.operating_hours.open)} – ${minutesToLabel(event.operating_hours.close)}`;
+            }
+            return range;
         }
         function escHtml(str) {
             const div = document.createElement('div');
@@ -1016,20 +1083,24 @@
         // Initial fill bar position
         updateTimeRangeUI();
 
-        function isMultiDayEvent(event) {
-            const s = new Date(event.start_date);
-            const e = new Date(event.end_date);
-            return s.toDateString() !== e.toDateString();
-        }
-
         function isEventInTimeWindow(event, fromMins, toMins) {
-            // Multi-day events: always show
-            if (isMultiDayEvent(event)) return true;
+            let startMins, endMins;
 
-            const s = new Date(event.start_date);
-            const e = new Date(event.end_date);
-            const startMins = s.getHours() * 60 + s.getMinutes();
-            const endMins = e.getHours() * 60 + e.getMinutes();
+            if (event.is_multi_day) {
+                if (event.operating_hours) {
+                    // Use parsed operating hours from description
+                    startMins = event.operating_hours.open;
+                    endMins = event.operating_hours.close;
+                } else {
+                    // No hours found — always show, user can check event page
+                    return true;
+                }
+            } else {
+                const s = new Date(event.start_date);
+                const e = new Date(event.end_date);
+                startMins = s.getHours() * 60 + s.getMinutes();
+                endMins = e.getHours() * 60 + e.getMinutes();
+            }
 
             // Event overlaps with the time window if it starts before window ends
             // AND ends after window starts
@@ -1098,7 +1169,11 @@
             // Only show categories that have events
             const activeCats = Object.keys(CATEGORY_COLORS).filter(c => catCounts[c] > 0);
 
-            let html = '';
+            const allActive = activeCats.every(c => activeCategories.has(c));
+            let html = `<button class="cat-filter-btn ${allActive ? 'active' : 'inactive'}" id="cat-all-btn"
+                style="background:#f3f4f6; border-color:${allActive ? '#6b7280' : 'transparent'}; color:#374151;">
+                All
+            </button>`;
             activeCats.forEach(cat => {
                 const color = getCatColor(cat);
                 const isActive = activeCategories.has(cat);
@@ -1114,7 +1189,19 @@
             container.innerHTML = html;
 
             // Click handlers
-            container.querySelectorAll('.cat-filter-btn').forEach(btn => {
+            document.getElementById('cat-all-btn').addEventListener('click', () => {
+                if (allActive) {
+                    activeCategories.clear();
+                } else {
+                    activeCats.forEach(c => activeCategories.add(c));
+                }
+                renderCategoryFilters();
+                renderMarkers();
+                renderSidebar();
+                updateCount();
+            });
+
+            container.querySelectorAll('.cat-filter-btn[data-category]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const cat = btn.dataset.category;
                     if (activeCategories.has(cat)) {
@@ -1144,13 +1231,14 @@
                 if (event.lat == null || event.lng == null) return;
 
                 const isUnknown = event.location_unknown;
+                const isInactive = event.is_active_today === false;
                 const cat = primaryCategory(event);
                 const color = getCatColor(cat);
 
                 const marker = L.circleMarker([event.lat, event.lng], {
-                    radius: isUnknown ? 8 : 7,
-                    fillColor: isUnknown ? '#9ca3af' : color.fill,
-                    fillOpacity: isUnknown ? 0.6 : 0.85,
+                    radius: isUnknown ? 8 : (isInactive ? 5 : 7),
+                    fillColor: isUnknown ? '#9ca3af' : (isInactive ? '#d1d5db' : color.fill),
+                    fillOpacity: isUnknown ? 0.6 : (isInactive ? 0.4 : 0.85),
                     color: isUnknown ? '#6b7280' : '#fff',
                     weight: isUnknown ? 2 : 1.5,
                     dashArray: isUnknown ? '4 3' : null,
@@ -1187,7 +1275,7 @@
             html += '</div>';
 
             html += `<h3>${escHtml(event.title)}</h3>`;
-            html += `<div class="popup-time">${formatDateRange(event.start_date, event.end_date)}</div>`;
+            html += `<div class="popup-time">${formatDateRange(event.start_date, event.end_date, event)}</div>`;
 
             if (event.address) {
                 const dist = getEventDistance(event);
@@ -1213,8 +1301,12 @@
             const list = document.getElementById('event-list');
             const visible = getVisibleEvents();
 
-            const located = visible.filter(e => !e.location_unknown);
-            const unlocated = visible.filter(e => e.location_unknown);
+            // Split into active today vs not
+            const activeToday = visible.filter(e => e.is_active_today !== false);
+            const inactiveToday = visible.filter(e => e.is_active_today === false);
+
+            const located = activeToday.filter(e => !e.location_unknown);
+            const unlocated = activeToday.filter(e => e.location_unknown);
 
             let html = '';
 
@@ -1226,6 +1318,11 @@
             if (unlocated.length > 0) {
                 html += '<div class="section-header">No fixed location</div>';
                 unlocated.forEach(e => { html += buildEventItem(e); });
+            }
+
+            if (inactiveToday.length > 0) {
+                html += '<div class="section-header">Not today</div>';
+                inactiveToday.forEach(e => { html += buildEventItem(e); });
             }
 
             if (visible.length === 0) {
@@ -1250,16 +1347,23 @@
             });
         }
 
+        const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
         function buildEventItem(event) {
             const isActive = event.id === activeEventId;
+            const isInactive = event.is_active_today === false;
             const cat = primaryCategory(event);
             const color = getCatColor(cat);
 
-            let html = `<div class="event-item${isActive ? ' active' : ''}" data-id="${event.id}">`;
+            let cls = 'event-item';
+            if (isActive) cls += ' active';
+            if (isInactive) cls += ' inactive-today';
+
+            let html = `<div class="${cls}" data-id="${event.id}">`;
             html += `<div class="event-item-dot" style="background:${event.location_unknown ? '#9ca3af' : color.fill}"></div>`;
             html += '<div class="event-item-content">';
             html += `<div class="event-title">${escHtml(event.title)}</div>`;
-            html += `<div class="event-meta">${formatDateRange(event.start_date, event.end_date)}`;
+            html += `<div class="event-meta">${formatDateRange(event.start_date, event.end_date, event)}`;
             if (event.address) {
                 const shortAddr = event.address.split(',')[0];
                 html += ` · ${escHtml(shortAddr)}`;
@@ -1269,6 +1373,10 @@
                 html += ` · <span style="color:#6366f1; font-weight:600;">${dist < 0.1 ? '< 0.1' : dist.toFixed(1)} mi</span>`;
             }
             html += '</div>';
+            if (isInactive && event.active_days) {
+                const dayStr = event.active_days.map(d => DAY_NAMES[d]).join(', ');
+                html += `<span class="inactive-badge">Only ${dayStr}</span> `;
+            }
             if (event.location_unknown) {
                 html += '<span class="no-location-badge">No fixed location</span> ';
             }
@@ -1391,6 +1499,18 @@
             }
         });
 
+        // ── Minimize toggles ─────────────────────────────────────────────
+        document.getElementById('sidebar-minimize').addEventListener('click', (e) => {
+            e.stopPropagation(); // don't trigger bottom sheet toggle on mobile
+            sidebar.classList.toggle('minimized');
+            e.currentTarget.classList.toggle('minimized');
+        });
+
+        document.getElementById('legend-minimize').addEventListener('click', () => {
+            document.getElementById('legend').classList.toggle('minimized');
+            document.getElementById('legend-minimize').classList.toggle('minimized');
+        });
+
         window.addEventListener('resize', checkMobile);
         checkMobile();
 
@@ -1398,6 +1518,83 @@
         if (isMobile() && navigator.geolocation) {
             requestLocation();
         }
+
+        // ── Draggable panels ─────────────────────────────────────────────
+        function makeDraggable(panel, handle) {
+            let startX, startY, startLeft, startTop, dragging = false, moved = false;
+
+            function onStart(clientX, clientY) {
+                if (isMobile()) return; // disable drag on mobile (use bottom sheet instead)
+                const rect = panel.getBoundingClientRect();
+                startX = clientX;
+                startY = clientY;
+                startLeft = rect.left;
+                startTop = rect.top;
+                dragging = true;
+                moved = false;
+                panel.classList.add('dragging');
+
+                // Switch from any right/bottom anchoring to top/left
+                panel.style.left = rect.left + 'px';
+                panel.style.top = rect.top + 'px';
+                panel.style.right = 'auto';
+                panel.style.bottom = 'auto';
+            }
+
+            function onMove(clientX, clientY) {
+                if (!dragging) return;
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+                if (!moved) return;
+
+                let newLeft = startLeft + dx;
+                let newTop = startTop + dy;
+
+                // Keep within viewport
+                const w = panel.offsetWidth;
+                const h = panel.offsetHeight;
+                newLeft = Math.max(0, Math.min(window.innerWidth - w, newLeft));
+                newTop = Math.max(0, Math.min(window.innerHeight - h, newTop));
+
+                panel.style.left = newLeft + 'px';
+                panel.style.top = newTop + 'px';
+            }
+
+            function onEnd() {
+                dragging = false;
+                panel.classList.remove('dragging');
+            }
+
+            // Mouse events
+            handle.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.minimize-btn') || e.target.closest('#sidebar-close')) return;
+                e.preventDefault();
+                onStart(e.clientX, e.clientY);
+            });
+            document.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+            document.addEventListener('mouseup', onEnd);
+
+            // Touch events (desktop only — mobile uses bottom sheet)
+            handle.addEventListener('touchstart', (e) => {
+                if (isMobile()) return;
+                if (e.target.closest('.minimize-btn')) return;
+                onStart(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            document.addEventListener('touchmove', (e) => {
+                if (!dragging) return;
+                onMove(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            document.addEventListener('touchend', onEnd);
+
+            // Suppress click on header after drag so it doesn't toggle bottom sheet
+            handle.addEventListener('click', (e) => {
+                if (moved) { e.stopImmediatePropagation(); moved = false; }
+            }, true);
+        }
+
+        makeDraggable(sidebar, document.getElementById('sidebar-header'));
+        makeDraggable(document.getElementById('legend'), document.getElementById('legend-header'));
 
         // ── Init ─────────────────────────────────────────────────────────
         loadEvents();

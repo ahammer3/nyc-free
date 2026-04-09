@@ -436,5 +436,129 @@
   "89 South Street, New York, NY, 10038": [
     40.7051819,
     -74.0024556
-  ]
+  ],
+  "Herald Square Plaza, New York, NY": null,
+  "140 Church Street, New York, NY, 10007": [
+    40.714625,
+    -74.0083944
+  ],
+  "45 Grand Street, New York, NY, 10013": [
+    40.7224282,
+    -74.0040569
+  ],
+  "211 Elizabeth Street, New York, NY, 10012": [
+    40.7225566,
+    -73.9943203
+  ],
+  "181 Front Street, Brooklyn, NY, 11201": [
+    40.7025544,
+    -73.9859841
+  ],
+  "1293 3rd Avenue, New York, NY, 10021": [
+    40.7712154,
+    -73.95941
+  ],
+  "419 Broome Street, New York, NY, 10013": [
+    40.7211648,
+    -73.9987093
+  ],
+  "308 Bedford Avenue, Brooklyn, NY, 11249": [
+    40.7138846,
+    -73.9619469
+  ],
+  "51 34th Street, Brooklyn, NY, 11232": [
+    40.6573917,
+    -74.0063218
+  ],
+  "5th Avenue, New York, NY, 10022": [
+    40.7622941,
+    -73.974469
+  ],
+  "127 East 27th Street, New York, NY, 10016": [
+    40.742233,
+    -73.9831787
+  ],
+  "271 Smith Street, Brooklyn, NY, 11231": [
+    40.6825951,
+    -73.9930392
+  ],
+  "40a 10th Avenue, New York, NY, 10014": [
+    40.7386558,
+    -74.0100314
+  ],
+  "1 Beard Street, Brooklyn, NY, 11231": [
+    40.6714479,
+    -74.0112154
+  ],
+  "Broadway &amp; E 17th Street, New York, NY, 10003": null,
+  "30 Wall Street, New York, NY, 10005": [
+    40.7070592,
+    -74.0101923
+  ],
+  "34 Saint Marks Place, New York, NY, 10003": [
+    40.7286353,
+    -73.9883916
+  ],
+  "165 West 65th Street, New York, NY, 10023": [
+    40.7740942,
+    -73.9843127
+  ],
+  "195 Avenue A, New York, NY, 10009": [
+    40.7292335,
+    -73.9814002
+  ],
+  "113 Madison Street, New York, NY, 10002": [
+    40.7123578,
+    -73.9947237
+  ],
+  "2 Main Street, Brooklyn, NY, 11201": [
+    40.7035968,
+    -73.9910007
+  ],
+  "108 Greenwich Avenue, New York, NY, 10011": [
+    40.7382494,
+    -74.0018955
+  ],
+  "10 Columbus Circle, New York, NY, 10019": [
+    40.7682549,
+    -73.9828519
+  ],
+  "6th Avenue &amp; West 45th Street, New York, NY, 10036": null,
+  "48 Greenwich Avenue, New York, NY, 10011": [
+    40.7356779,
+    -74.0003064
+  ],
+  "683 Broadway, New York, NY, 10012": [
+    40.7279757,
+    -73.994851
+  ],
+  "118 East 40th Street, New York, NY, 10016": [
+    40.7501799,
+    -73.9776212
+  ],
+  "209 West 57th Street, New York, NY, 10019": [
+    40.765789,
+    -73.9804467
+  ],
+  "40 East 14th Street, New York, NY, 10003": [
+    40.734898,
+    -73.9914856
+  ],
+  "148 West 51st Street, New York, NY, 10019": [
+    40.7613487,
+    -73.9822791
+  ],
+  "1047 Amsterdam Avenue, New York, NY, 10025": [
+    40.803766,
+    -73.9617843
+  ],
+  "1 Rose Street, New York, NY, 10038": [
+    40.6442643,
+    -73.9073643
+  ],
+  "1040 Grand Concourse, The Bronx, NY, 10456": [
+    40.8310911,
+    -73.9199471
+  ],
+  "Park Ave &amp; E 40th StNew York, NY, 10017United States (map)": null
 }
