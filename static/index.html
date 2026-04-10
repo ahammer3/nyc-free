@@ -540,6 +540,9 @@
         }
         .leaflet-popup-content { margin: 12px 14px; }
 
+        /* Sidebar count badge — hidden by default, shown on mobile via media query */
+        #sidebar-count { display: none; }
+
         /* Loading */
         #loading {
             position: absolute;
@@ -757,8 +760,8 @@
         /* Extra small phones */
         @media (max-width: 380px) {
             #top-bar { padding: 6px 8px; gap: 4px; }
-            .nav-btn { width: 40px; height: 40px; }
-            .location-btn#locate-me-btn { padding: 0 8px; font-size: 11px; }
+            .nav-btn { width: 38px; height: 38px; }
+            .location-btn#locate-me-btn { width: 38px; height: 38px; }
         }
     </style>
 </head>
@@ -1524,45 +1527,48 @@
             sidebarToggle.classList.add('visible');
         });
 
-        // Bottom sheet: tap header to toggle, swipe down to collapse
+        // Bottom sheet: tap header to EXPAND only (collapsing is swipe-only to prevent accidental dismiss)
         const sidebarHeader = document.getElementById('sidebar-header');
         sidebarHeader.addEventListener('click', () => {
             if (!isMobile()) return;
-            if (sidebar.classList.contains('expanded')) {
-                sidebar.classList.remove('expanded');
-                sidebarToggle.classList.add('visible');
-            } else {
+            if (!sidebar.classList.contains('expanded')) {
+                // Peek → expanded
                 sidebar.classList.add('expanded');
-                sidebarToggle.classList.remove('visible');
             }
+            // When already expanded, tapping header does nothing — swipe down to collapse
         });
 
-        // Touch swipe to dismiss bottom sheet
+        // Touch swipe to dismiss bottom sheet (from anywhere on the sheet)
         let touchStartY = 0;
         let touchCurrentY = 0;
         let isSwiping = false;
 
-        sidebarHeader.addEventListener('touchstart', (e) => {
-            if (!isMobile()) return;
+        // Also allow swiping from anywhere on the sheet, not just the header
+        sidebar.addEventListener('touchstart', (e) => {
+            if (!isMobile() || !sidebar.classList.contains('expanded')) return;
             touchStartY = e.touches[0].clientY;
+            touchCurrentY = touchStartY;
             isSwiping = true;
         }, { passive: true });
 
-        sidebarHeader.addEventListener('touchmove', (e) => {
+        sidebar.addEventListener('touchmove', (e) => {
             if (!isSwiping || !isMobile()) return;
             touchCurrentY = e.touches[0].clientY;
             const dy = touchCurrentY - touchStartY;
-            if (dy > 0 && sidebar.classList.contains('expanded')) {
+            // Only allow downward drag, and only when at the top of the event list scroll
+            const eventList = document.getElementById('event-list');
+            const isAtTop = eventList.scrollTop <= 0;
+            if (dy > 0 && sidebar.classList.contains('expanded') && isAtTop) {
                 sidebar.style.transform = `translateY(${dy}px)`;
             }
         }, { passive: true });
 
-        sidebarHeader.addEventListener('touchend', () => {
+        sidebar.addEventListener('touchend', () => {
             if (!isSwiping || !isMobile()) return;
             isSwiping = false;
             const dy = touchCurrentY - touchStartY;
             sidebar.style.transform = '';
-            if (dy > 80) {
+            if (dy > 50 && sidebar.classList.contains('expanded')) {
                 // Swipe down far enough — collapse to peek
                 sidebar.classList.remove('expanded');
             }
