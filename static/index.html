@@ -707,22 +707,27 @@
                 height: 24px;
             }
 
+            /* Prevent filter sections from being squished by flex */
+            #distance-filter, #time-filter, #category-filters {
+                flex-shrink: 0;
+            }
+
             /* Category filters: horizontally scrollable with fade */
             #category-filters {
                 flex-wrap: nowrap;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
-                padding: 8px 12px;
+                padding: 10px 12px;
                 -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
                 mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
             }
             #category-filters::-webkit-scrollbar { display: none; }
             .cat-filter-btn {
-                padding: 7px 12px;
-                font-size: 12px;
+                padding: 8px 14px;
+                font-size: 13px;
                 flex-shrink: 0;
-                min-height: 32px;
+                min-height: 36px;
             }
 
             /* Event list: smooth scroll */
