@@ -389,10 +389,17 @@
             align-items: flex-start;
         }
         .event-item:hover { background: #f3f4f6; }
+        .event-item:active { background: #e5e7eb; }
         .event-item.active { background: #eef2ff; }
         .event-item.inactive-today {
             opacity: 0.45;
         }
+        .cat-filter-btn { transition: transform 0.1s, background 0.15s, border-color 0.15s; }
+        .cat-filter-btn:active { transform: scale(0.95); }
+        .nav-btn { transition: transform 0.1s, background 0.15s; }
+        .nav-btn:active { transform: scale(0.92); }
+        .location-btn { transition: transform 0.1s, background 0.15s; }
+        .location-btn:active { transform: scale(0.95); }
         .inactive-badge {
             display: inline-block;
             font-size: 10px;
@@ -415,6 +422,9 @@
             font-weight: 600;
             color: #1f2937;
             margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .event-meta {
             font-size: 11px;
@@ -583,11 +593,24 @@
             }
             #event-count { display: none; }
             .location-btn#locate-me-btn {
+                width: 44px;
                 height: 44px;
-                padding: 0 12px;
-                font-size: 12px;
+                padding: 0;
+                font-size: 0;
                 border-radius: 8px;
                 flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+            }
+            .location-btn#locate-me-btn::before {
+                content: '';
+                width: 18px;
+                height: 18px;
+                background: white;
+                -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 12h3'/></svg>") center/contain no-repeat;
+                mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'/><path d='M12 2v3M12 19v3M2 12h3M19 12h3'/></svg>") center/contain no-repeat;
             }
 
             /* Sidebar becomes bottom sheet */
@@ -597,9 +620,9 @@
                 right: 0;
                 bottom: 0;
                 width: 100%;
-                max-height: 55vh;
+                max-height: 85vh;
                 border-radius: 16px 16px 0 0;
-                transform: translateY(calc(100% - 44px));
+                transform: translateY(calc(100% - 60px));
                 transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                 box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
                 padding-bottom: env(safe-area-inset-bottom);
@@ -609,6 +632,21 @@
             }
             #sidebar.expanded {
                 transform: translateY(0);
+            }
+
+            /* Minimize buttons are redundant on mobile (bottom sheet already collapses) */
+            .minimize-btn { display: none !important; }
+
+            /* Event count in sidebar header on mobile */
+            #sidebar-count {
+                display: inline-block;
+                margin-left: 8px;
+                padding: 2px 8px;
+                border-radius: 10px;
+                background: #eef2ff;
+                color: #6366f1;
+                font-size: 11px;
+                font-weight: 600;
             }
 
             /* Drag handle for bottom sheet */
@@ -628,20 +666,8 @@
             }
             #sidebar-close { display: none !important; }
 
-            /* Toggle button becomes floating pill at bottom */
-            #sidebar-toggle {
-                bottom: calc(12px + env(safe-area-inset-bottom));
-                top: auto;
-                left: 50%;
-                transform: translateX(-50%);
-                width: auto;
-                padding: 10px 20px;
-                font-size: 14px;
-                font-weight: 600;
-                border-radius: 24px;
-                box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-            }
-            #sidebar-toggle.visible { display: flex; }
+            /* Toggle pill is redundant on mobile — peek header is the entry point */
+            #sidebar-toggle { display: none !important; }
 
             /* Larger touch targets for filters */
             #distance-toggle, #time-toggle {
@@ -649,7 +675,14 @@
                 height: 22px;
             }
             #distance-filter, #time-filter {
-                padding: 10px 16px;
+                padding: 8px 16px;
+            }
+            #distance-filter-header, #time-filter-header {
+                margin-bottom: 4px;
+            }
+            #location-status, #time-hint {
+                font-size: 10px;
+                margin-top: 2px;
             }
             #distance-slider {
                 height: 44px; /* larger touch area */
@@ -671,19 +704,22 @@
                 height: 24px;
             }
 
-            /* Category filters: horizontally scrollable */
+            /* Category filters: horizontally scrollable with fade */
             #category-filters {
                 flex-wrap: nowrap;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none;
                 padding: 8px 12px;
+                -webkit-mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
+                mask-image: linear-gradient(to right, black 0, black calc(100% - 24px), transparent 100%);
             }
             #category-filters::-webkit-scrollbar { display: none; }
             .cat-filter-btn {
-                padding: 6px 12px;
+                padding: 7px 12px;
                 font-size: 12px;
                 flex-shrink: 0;
+                min-height: 32px;
             }
 
             /* Event list: smooth scroll */
@@ -698,9 +734,17 @@
             /* Hide legend on mobile — category pills serve this purpose */
             #legend { display: none; }
 
-            /* Popup sizing for mobile */
-            .event-popup { max-width: 260px; }
-            .leaflet-popup-content { margin: 10px 12px; }
+            /* Popup sizing for mobile — wider, more readable */
+            .event-popup { max-width: calc(100vw - 80px); }
+            .event-popup img { height: 160px; }
+            .leaflet-popup-content { margin: 12px 14px; }
+            .leaflet-popup-content-wrapper { max-width: calc(100vw - 32px); }
+            .leaflet-popup-close-button {
+                font-size: 24px !important;
+                padding: 8px 10px !important;
+                width: 36px !important;
+                height: 36px !important;
+            }
 
             /* Prevent text selection on interactive elements */
             .nav-btn, .cat-filter-btn, .location-btn, #sidebar-header {
@@ -732,7 +776,7 @@
 
     <div id="sidebar">
         <div id="sidebar-header" class="draggable-header">
-            <span>Events</span>
+            <span>Events<span id="sidebar-count"></span></span>
             <div style="display:flex; align-items:center; gap:4px;">
                 <button class="minimize-btn" id="sidebar-minimize" title="Minimize">&#x25B2;</button>
                 <button id="sidebar-close" title="Close sidebar">&times;</button>
@@ -1244,9 +1288,17 @@
                     dashArray: isUnknown ? '4 3' : null,
                 }).addTo(map);
 
-                marker.bindPopup(buildPopup(event), { maxWidth: 300 });
+                const mobile = window.innerWidth <= 700;
+                marker.bindPopup(buildPopup(event), {
+                    maxWidth: mobile ? Math.min(window.innerWidth - 40, 320) : 300,
+                    autoPanPadding: mobile ? L.point(20, 100) : L.point(30, 30),
+                });
                 marker.on('click', () => {
                     setActiveEvent(event.id);
+                    // On mobile, collapse sheet to peek so the popup is visible
+                    if (mobile && sidebar.classList.contains('expanded')) {
+                        sidebar.classList.remove('expanded');
+                    }
                 });
 
                 marker._eventId = event.id;
@@ -1338,10 +1390,20 @@
                     const event = events.find(e => e.id === id);
                     if (!event) return;
                     setActiveEvent(id);
+
+                    // On mobile, collapse the bottom sheet to peek so popup is visible
+                    if (isMobile && isMobile()) {
+                        sidebar.classList.remove('expanded');
+                    }
+
                     const marker = markers.find(m => m._eventId === id);
                     if (marker) {
-                        map.setView(marker.getLatLng(), 14, { animate: true });
-                        marker.openPopup();
+                        // Slight delay on mobile so sheet collapse animation finishes before panning
+                        const delay = (isMobile && isMobile()) ? 320 : 0;
+                        setTimeout(() => {
+                            map.setView(marker.getLatLng(), 14, { animate: true });
+                            marker.openPopup();
+                        }, delay);
                     }
                 });
             });
@@ -1397,13 +1459,20 @@
 
         function updateCount() {
             const el = document.getElementById('event-count');
+            const sidebarCountEl = document.getElementById('sidebar-count');
             const visible = getVisibleEvents();
             const n = visible.length;
             const total = events.length;
+            let text;
             if (n === total) {
-                el.textContent = n === 0 ? 'No events' : `${n} event${n !== 1 ? 's' : ''}`;
+                text = n === 0 ? 'No events' : `${n} event${n !== 1 ? 's' : ''}`;
             } else {
-                el.textContent = `${n} of ${total} events`;
+                text = `${n} of ${total} events`;
+            }
+            el.textContent = text;
+            // Sidebar header badge shows just the count
+            if (sidebarCountEl) {
+                sidebarCountEl.textContent = n === total ? `${n}` : `${n}/${total}`;
             }
         }
 
@@ -1428,9 +1497,10 @@
             if (isMobile()) {
                 sidebar.classList.remove('expanded');
                 sidebar.classList.remove('collapsed');
-                sidebarToggle.classList.add('visible');
+                sidebar.classList.remove('minimized');
+                sidebarToggle.classList.remove('visible');
                 sidebarClose.style.display = 'none';
-                // Start in peek state (shows drag handle via translateY(calc(100% - 44px)))
+                // Start in peek state (shows drag handle + header via translateY(calc(100% - 60px)))
             } else {
                 sidebar.classList.remove('collapsed');
                 sidebar.classList.remove('expanded');
@@ -1493,9 +1563,8 @@
             const dy = touchCurrentY - touchStartY;
             sidebar.style.transform = '';
             if (dy > 80) {
-                // Swipe down far enough — collapse
+                // Swipe down far enough — collapse to peek
                 sidebar.classList.remove('expanded');
-                sidebarToggle.classList.add('visible');
             }
         });
 
