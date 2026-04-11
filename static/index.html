@@ -515,14 +515,43 @@
             line-height: 1.4;
             margin-bottom: 8px;
         }
-        .event-popup .popup-link {
-            display: inline-block;
+        .event-popup .popup-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .event-popup .popup-link,
+        .event-popup .popup-directions,
+        .event-popup .popup-share {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
             font-size: 12px;
-            color: #6366f1;
             text-decoration: none;
             font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            -webkit-tap-highlight-color: transparent;
         }
-        .event-popup .popup-link:hover { text-decoration: underline; }
+        .event-popup .popup-link {
+            background: #eef2ff;
+            color: #6366f1;
+        }
+        .event-popup .popup-link:hover { background: #e0e7ff; }
+        .event-popup .popup-directions {
+            background: #ecfdf5;
+            color: #059669;
+        }
+        .event-popup .popup-directions:hover { background: #d1fae5; }
+        .event-popup .popup-share {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .event-popup .popup-share:hover { background: #e5e7eb; }
         .event-popup .popup-unknown {
             font-size: 11px;
             background: #fef3c7;
@@ -595,6 +624,16 @@
                 flex-shrink: 0;
             }
             #event-count { display: none; }
+            #theme-toggle {
+                width: 44px;
+                height: 44px;
+                font-size: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                flex-shrink: 0;
+            }
             .location-btn#locate-me-btn {
                 width: 44px;
                 height: 44px;
@@ -768,6 +807,94 @@
             .nav-btn { width: 38px; height: 38px; }
             .location-btn#locate-me-btn { width: 38px; height: 38px; }
         }
+
+        /* ── Dark mode toggle button ─────────────────────────────── */
+        #theme-toggle {
+            background: none;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #374151;
+            line-height: 1;
+            transition: transform 0.1s, background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #theme-toggle:hover { background: #f3f4f6; }
+        #theme-toggle:active { transform: scale(0.92); }
+
+        /* ── Dark mode (class-based) ─────────────────────────────── */
+        html.dark body { background: #111; }
+
+        html.dark #theme-toggle {
+            border-color: #4b5563;
+            color: #d1d5db;
+        }
+        html.dark #theme-toggle:hover { background: #374151; }
+
+        html.dark #top-bar { background: #1f2937; box-shadow: 0 2px 12px rgba(0,0,0,0.4); color: #f3f4f6; }
+        html.dark #top-bar h1 { color: #f3f4f6; }
+        html.dark #date-input { background: #374151; color: #f3f4f6; border-color: #4b5563; }
+        html.dark #date-input:focus { border-color: #818cf8; }
+        html.dark .nav-btn { color: #d1d5db; border-color: #4b5563; }
+        html.dark .nav-btn:hover { background: #374151; }
+        html.dark #event-count { color: #9ca3af; }
+
+        html.dark #sidebar { background: #1f2937; box-shadow: 0 2px 12px rgba(0,0,0,0.4); }
+        html.dark #sidebar-header { border-bottom-color: #374151; color: #f3f4f6; }
+        html.dark #sidebar-count { background: #312e81; color: #a5b4fc; }
+
+        html.dark #distance-filter,
+        html.dark #time-filter { border-bottom-color: #374151; }
+        html.dark #distance-filter-header label,
+        html.dark #time-filter-header label { color: #d1d5db; }
+        html.dark #distance-value,
+        html.dark #time-range-label { color: #818cf8; }
+        html.dark #location-status,
+        html.dark #time-hint { color: #6b7280; }
+        html.dark #distance-slider { accent-color: #818cf8; }
+        html.dark .dual-range-track { background: #374151; }
+        html.dark .dual-range-fill { background: #818cf8; }
+        html.dark .dual-range input[type="range"]::-webkit-slider-thumb { background: #818cf8; border-color: #1f2937; }
+        html.dark #category-filters { border-bottom-color: #374151; }
+        html.dark .cat-filter-btn.inactive { opacity: 0.3; }
+        html.dark #distance-toggle,
+        html.dark #time-toggle { accent-color: #818cf8; }
+
+        html.dark #event-list { color: #f3f4f6; }
+        html.dark .event-item { border-bottom-color: #2d3748; }
+        html.dark .event-item:hover { background: #374151; }
+        html.dark .event-item:active { background: #4b5563; }
+        html.dark .event-item.active { background: #312e81; }
+        html.dark .event-title { color: #f3f4f6; }
+        html.dark .event-meta { color: #9ca3af; }
+        html.dark .section-header { color: #6b7280; }
+        html.dark .inactive-badge { background: #374151; color: #6b7280; }
+        html.dark .no-location-badge { background: #78350f; color: #fcd34d; }
+
+        html.dark #legend { background: #1f2937; box-shadow: 0 2px 8px rgba(0,0,0,0.4); color: #d1d5db; }
+        html.dark .legend-row { color: #d1d5db; }
+
+        html.dark .leaflet-popup-content-wrapper { background: #1f2937 !important; color: #f3f4f6; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        html.dark .leaflet-popup-tip { background: #1f2937 !important; }
+        html.dark .leaflet-popup-close-button { color: #9ca3af !important; }
+        html.dark .event-popup h3 { color: #f3f4f6; }
+        html.dark .event-popup .popup-time { color: #818cf8; }
+        html.dark .event-popup .popup-address { color: #9ca3af; }
+        html.dark .event-popup .popup-desc { color: #d1d5db; }
+        html.dark .event-popup .popup-unknown { background: #78350f; color: #fcd34d; }
+        html.dark .event-popup .popup-link { background: #312e81; color: #a5b4fc; }
+        html.dark .event-popup .popup-link:hover { background: #3730a3; }
+        html.dark .event-popup .popup-directions { background: #064e3b; color: #6ee7b7; }
+        html.dark .event-popup .popup-directions:hover { background: #065f46; }
+        html.dark .event-popup .popup-share { background: #374151; color: #d1d5db; }
+        html.dark .event-popup .popup-share:hover { background: #4b5563; }
+
+        html.dark #loading { background: #1f2937; color: #9ca3af; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+        html.dark .location-btn { background: #4f46e5; }
+        html.dark .location-btn:hover { background: #4338ca; }
+        html.dark #sidebar-header::before { background: #4b5563; }
     </style>
 </head>
 <body>
@@ -780,6 +907,7 @@
         <button class="nav-btn" id="next-day" title="Next day">&rarr;</button>
         <span id="event-count"></span>
         <button class="location-btn" id="locate-me-btn" title="Use my location">My Location</button>
+        <button id="theme-toggle" title="Toggle dark mode">&#9790;</button>
     </div>
 
     <div id="sidebar">
@@ -886,12 +1014,43 @@
         let timeMinFrom = 600;  // 10:00 AM = 40 * 15
         let timeMinTo = 1080;   // 6:00 PM  = 72 * 15
 
+        // ── Theme ────────────────────────────────────────────────────────
+        const LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+        function getTheme() {
+            const stored = localStorage.getItem('theme');
+            if (stored === 'dark' || stored === 'light') return stored;
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.classList.toggle('dark', theme === 'dark');
+            document.getElementById('theme-toggle').textContent = theme === 'dark' ? '\u2600' : '\u263E';
+            document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#1f2937' : '#ffffff';
+        }
+
+        let currentTheme = getTheme();
+        applyTheme(currentTheme);
+
         // ── Map ──────────────────────────────────────────────────────────
         const map = L.map('map', { zoomControl: true }).setView([40.745, -73.985], 12);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        let tileLayer = L.tileLayer(currentTheme === 'dark' ? DARK_TILES : LIGHT_TILES, {
             attribution: '&copy; OpenStreetMap &copy; CARTO',
             maxZoom: 19,
         }).addTo(map);
+
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+            // Swap map tiles
+            map.removeLayer(tileLayer);
+            tileLayer = L.tileLayer(currentTheme === 'dark' ? DARK_TILES : LIGHT_TILES, {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                maxZoom: 19,
+            }).addTo(map);
+        });
 
         // ── Date picker ──────────────────────────────────────────────────
         const dateInput = document.getElementById('date-input');
@@ -1351,9 +1510,41 @@
                 html += `<div class="popup-desc">${escHtml(desc)}</div>`;
             }
 
-            html += `<a class="popup-link" href="${event.event_url}" target="_blank" rel="noopener">View Event &rarr;</a>`;
+            html += '<div class="popup-actions">';
+            html += `<a class="popup-link" href="${event.event_url}" target="_blank" rel="noopener">View Event</a>`;
+
+            // Directions button — opens Apple Maps on iOS, Google Maps elsewhere
+            if (event.lat != null && !event.location_unknown) {
+                const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+                const mapsUrl = isIOS
+                    ? `maps://maps.apple.com/?daddr=${event.lat},${event.lng}&dirflg=w`
+                    : `https://www.google.com/maps/dir/?api=1&destination=${event.lat},${event.lng}&travelmode=walking`;
+                html += `<a class="popup-directions" href="${mapsUrl}" target="_blank" rel="noopener">Directions</a>`;
+            }
+
+            // Share button
+            if (navigator.share) {
+                html += `<button class="popup-share" onclick="shareEvent('${event.id}')">Share</button>`;
+            }
+
+            html += '</div>';
             html += '</div>';
             return html;
+        }
+
+        // ── Share ─────────────────────────────────────────────────────
+        function shareEvent(eventId) {
+            const event = events.find(e => e.id === eventId);
+            if (!event) return;
+            const timeStr = formatDateRange(event.start_date, event.end_date, event);
+            const text = event.address
+                ? `${event.title} — ${timeStr} @ ${event.address}`
+                : `${event.title} — ${timeStr}`;
+            navigator.share({
+                title: event.title,
+                text: text,
+                url: event.event_url,
+            }).catch(() => {}); // user cancelled — ignore
         }
 
         // ── Sidebar ──────────────────────────────────────────────────────

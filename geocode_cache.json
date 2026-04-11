@@ -560,5 +560,61 @@
     40.8310911,
     -73.9199471
   ],
-  "Park Ave &amp; E 40th StNew York, NY, 10017United States (map)": null
+  "Park Ave &amp; E 40th StNew York, NY, 10017United States (map)": null,
+  "935 Broadway, New York, NY, 10010": [
+    40.740293,
+    -73.9895786
+  ],
+  "16 Morton Street, New York, NY, 10014": [
+    40.7311077,
+    -74.0037659
+  ],
+  "Washington Square Park, New York, NY, 10012": [
+    40.7306607,
+    -73.9984115
+  ],
+  "506 Broadway, New York, NY, 10012": [
+    40.7222227,
+    -73.999116
+  ],
+  "188 East 86th Street, New York, NY, 10028": [
+    40.7787096,
+    -73.9544011
+  ],
+  "66 West 125th Street, New York, NY, 10027": [
+    40.8071645,
+    -73.9447538
+  ],
+  "1419 Forest Ave, Staten Island, NY 10302": [
+    40.625183,
+    -74.1363841
+  ],
+  "1140 3rd Avenue, New York, NY, 10065": [
+    40.766329,
+    -73.9632201
+  ],
+  "Hudson River Greenway, New York, NY, 10014": [
+    40.7358708,
+    -74.0102855
+  ],
+  "31 East 17th Street, New York, NY, 10003": [
+    40.7369776,
+    -73.9897492
+  ],
+  "188 Lafayette Street, New York, NY, 10013": [
+    40.7209136,
+    -73.9985174
+  ],
+  "New York, NY, 11201": [
+    40.7127281,
+    -74.0060152
+  ],
+  "New York, NY, 10018": [
+    40.7127281,
+    -74.0060152
+  ],
+  "15 River Street, Brooklyn, NY, 11249": [
+    40.7166283,
+    -73.9665073
+  ]
 }
