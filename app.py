@@ -19,6 +19,17 @@ async def index():
     return FileResponse("static/index.html")
 
 
+@app.get("/sw.js")
+async def service_worker():
+    """Service worker must be served from root to control the entire scope."""
+    return FileResponse("static/sw.js", media_type="application/javascript")
+
+
+@app.get("/manifest.json")
+async def manifest():
+    return FileResponse("static/manifest.json", media_type="application/manifest+json")
+
+
 @app.get("/api/events")
 async def get_events(date: str = Query(None, description="YYYY-MM-DD")):
     """Return events active on the given date (or today)."""

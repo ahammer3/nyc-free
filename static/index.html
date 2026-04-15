@@ -3,10 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+    <title>NYC Free Events Map</title>
+    <meta name="description" content="Interactive map of every free event happening in New York City — updated daily from nycforfree.co.">
+
+    <!-- Open Graph (Facebook, iMessage, Slack, Discord, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="NYC Free Events Map">
+    <meta property="og:description" content="Every free event in NYC, on an interactive map. Filter by distance, time, and category.">
+    <meta property="og:image" content="/static/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="NYC Free Events Map">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="NYC Free Events Map">
+    <meta name="twitter:description" content="Every free event in NYC, on an interactive map.">
+    <meta name="twitter:image" content="/static/og-image.png">
+
+    <!-- PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ffffff">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#ffffff">
-    <title>NYC Free Events Map</title>
+    <meta name="apple-mobile-web-app-title" content="NYC Free">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
@@ -1872,6 +1900,14 @@
 
         if (window.innerWidth > 700) {
             map.panBy([-160, 0], { animate: false });
+        }
+
+        // ── Service worker registration (PWA) ────────────────────────────
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .catch((err) => console.warn('SW registration failed:', err));
+            });
         }
     </script>
 </body>
